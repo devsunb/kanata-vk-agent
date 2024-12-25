@@ -1,6 +1,6 @@
 # kanata-appvk
 
-Watch macOS frontmost app and press/release kanata virtual keys
+Watch macOS frontmost app and press/release kanata virtual keys to enable application-aware key mappings
 
 ## Background
 
@@ -11,12 +11,104 @@ kanata uses [Karabiner-DriverKit-VirtualHIDDevice](https://github.com/pqrs-org/K
 The reason I decided to use kanata instead of Karabiner-Elements is that kanata has many features such as layers and macros that are difficult to implement in Karabiner-Elements.
 
 However, one thing I missed when switching from Karabiner-Elements to kanata was application-aware key mapping.
-
 kanata made it clear that application-aware layer switching should be done through an external tool, not within kanata. [kanata#770](https://github.com/jtroo/kanata/discussions/770)
 
 It seemed that many people had already developed tools for Linux and Windows, but I couldn't find one for macOS. So I decided to create an application-aware kanata helper tool for macOS.
 
 Initially, I tried to switch layers, but realized that for simple configuration and to avoid tricky situations like switching apps during layer-toggle(layer-while-held), it was better to use virtual keys rather than layers. So I created a tool that allows application-aware key mappings based on virtual keys.
+
+## Install
+
+For now, you can clone this repository, build it yourself, copy it to your PATH, and run it.
+
+```sh
+git clone https://github.com/devsunb/kanata-appvk.git
+cd kanata-appvk
+cargo build --release
+cp target/release/kanata-appvk "$HOME/.local/bin/kanata-appvk"
+```
+
+If you're interested in using launchd to automatically run in the background, see the following script.
+
+```sh
+KANATA_APPVK_ID="local.kanata-appvk"
+KANATA_APPVK="$HOME/.local/bin/kanata-appvk"
+KANATA_APPVK_PLIST="$LAUNCH_AGENTS_PATH/$KANATA_APPVK_ID.plist"
+
+cat <<EOF | tee "$KANATA_APPVK_PLIST" >/dev/null
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>$KANATA_APPVK_ID</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>$KANATA_APPVK</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true />
+
+    <key>KeepAlive</key>
+    <dict>
+      <key>Crashed</key>
+      <true />
+      <key>SuccessfulExit</key>
+      <false />
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/kanata_appvk_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/kanata_appvk_stderr.log</string>
+  </dict>
+</plist>
+EOF
+
+launchctl bootout gui/501 "$KANATA_APPVK_PLIST" 2>/dev/null || true
+launchctl bootstrap gui/501 "$KANATA_APPVK_PLIST"
+launchctl enable "gui/501/$KANATA_APPVK_ID"
+```
+
+You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), etc. to suit your system.
+
+## Usage
+
+```sh
+$ kanata-appvk --help
+
+Watch macOS frontmost app and press/release kanata virtual keys
+
+Example: kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox
+
+Usage: kanata-appvk [OPTIONS]
+
+Options:
+  -l, --log-level <LOG_LEVEL>
+          Log level
+
+          [default: info]
+          [possible values: off, error, warn, info, debug, trace]
+
+  -p, --port <PORT>
+          TCP port number of kanata
+
+          [default: 5829]
+
+  -b, --bundle-ids <BUNDLE_IDS>
+          Bundle Identifiers, each of which is the name of a virtual key
+
+  -f, --find-id-mode
+          Just print frontmost app's Bundle Identifier when it changes without connecting to kanata
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+```
 
 ## Prerequisites
 
@@ -56,10 +148,15 @@ The above kanata configuration would make the key `1` act as `1` in Safari, `2` 
 kanata-appvk should be running with a command like:
 
 ```sh
-kanata-appvk -p 5829 -d com.apple.Safari,org.mozilla.firefox,com.github.wez.wezterm
+kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox,com.github.wez.wezterm
 ```
 
-If you're curious about what your app's bundle identifier is, use the -f option.
+Unless the current frontmost app is one of the apps passed with the `-b` option, all bundle identifier virtual keys will be in the released state.
+
+This means that in the above configuration, if you switch apps in the order Safari - Finder - Firefox,
+the virtual keys that are activated are `com.apple.Safari` - (all released) - `org.mozilla.firefox`, respectively.
+
+If you're curious about what your app's bundle identifier is, use the `-f` option.
 
 kanata-appvk will not connect to kanata, and will just print the bundle identifier of the frontmost app when the frontmost app changes.
 
@@ -81,3 +178,9 @@ kanata-appvk -f
 - As explained in Background, this tool currently only support macOS
 - kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not run when the virtual key is pressed, so it will run on the next app change
 - kanata allows [up to 767 virtual keys](https://jtroo.github.io/config.html#virtual-keys)
+
+## Credit
+
+- [appwatcher](https://github.com/meschbach/appwatcher): Example of using cgo to execute go code when macOS frontmost app changes
+- [clavy](https://github.com/rami3l/clavy): I had never used rust before, so I was going to make it in go, but then I saw that this repository uses objc2 libraries and channel, so I rebuilt it in rust.
+- [qanata](https://github.com/veyxov/qanata): Referenced how to communicate over a TCP connection with kanata in rust.
