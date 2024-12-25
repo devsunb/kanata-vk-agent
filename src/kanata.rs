@@ -11,7 +11,7 @@ enum ClientMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum Action {
+enum Action {
     Press,
     Release,
 }
