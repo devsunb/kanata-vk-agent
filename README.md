@@ -2,23 +2,14 @@
 
 Watch macOS frontmost app and press/release kanata virtual keys to enable application-aware key mappings
 
-## Background
+## What does this do?
 
-I'm a macOS user, and until I started using [kanata](https://github.com/jtroo/kanata), I was using [Karabiner-Elements](https://github.com/pqrs-org/Karabiner-Elements) for application-aware key mapping.
-
-kanata uses [Karabiner-DriverKit-VirtualHIDDevice](https://github.com/pqrs-org/Karabiner-DriverKit-VirtualHIDDevice) internally on macOS, so it cannot be used with Karabiner-Elements. [kanata#1211](https://github.com/jtroo/kanata/issues/1211)
-
-The reason I decided to use kanata instead of Karabiner-Elements is that kanata has many features such as layers and macros that are difficult to implement in Karabiner-Elements.
-
-However, one thing I missed when switching from Karabiner-Elements to kanata was application-aware key mapping.
-kanata made it clear that application-aware layer switching should be done through an external tool, not within kanata. [kanata#770](https://github.com/jtroo/kanata/discussions/770)
-
-It seemed that many people had already developed tools for Linux and Windows,
-([Community projects related to kanata](https://github.com/jtroo/kanata#community-projects-related-to-kanata))
-but I couldn't find one for macOS. So I decided to create an application-aware kanata helper tool for macOS.
-
-Initially, I tried to switch layers, but realized that for simple configuration and to avoid tricky situations like switching apps during layer-toggle(layer-while-held),
-it was better to use virtual keys rather than layers. So I created a tool that allows application-aware key mappings based on virtual keys.
+- on start
+  - release all bundle id virtual keys
+  - press the virtual key named with the frontmost app's bundle id (if it is included in the `-b` option)
+- when the frontmost app changes (and that app's bundle id is included in the `-b` option)
+  - release the pressed bundle id virtual key (if exists)
+  - press the new frontmost app's bundle id virtual key
 
 ## Install
 
@@ -49,6 +40,10 @@ cat <<EOF | tee "$KANATA_APPVK_PLIST" >/dev/null
     <key>ProgramArguments</key>
     <array>
       <string>$KANATA_APPVK</string>
+      <string>-p</string>
+      <string>5829</string>
+      <string>-b</string>
+      <string>com.apple.Safari,org.mozilla.firefox</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -75,7 +70,7 @@ launchctl bootstrap gui/501 "$KANATA_APPVK_PLIST"
 launchctl enable "gui/501/$KANATA_APPVK_ID"
 ```
 
-You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), etc. to suit your system.
+You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), port(`5829`), bundle identifiers(`com.apple.Safari,org.mozilla.firefox`), etc. to suit your system.
 
 ## Usage
 
@@ -167,20 +162,45 @@ kanata-appvk will not connect to kanata, and will just print the bundle identifi
 kanata-appvk -f
 ```
 
-## How it works
+## Background
 
-- on start
-  - release all bundle identifier virtual keys
-  - press the virtual key named with the frontmost app's bundle identifier
-- when the frontmost app changes (and that app's bundle identifier is included in the bundle identifiers option)
-  - release the pressed virtual key
-  - press the new frontmost app's bundle identifier virtual key
+I'm a macOS user, and until I started using [kanata](https://github.com/jtroo/kanata), I was using [Karabiner-Elements](https://github.com/pqrs-org/Karabiner-Elements) for application-aware key mapping.
+
+kanata uses [Karabiner-DriverKit-VirtualHIDDevice](https://github.com/pqrs-org/Karabiner-DriverKit-VirtualHIDDevice) internally on macOS, so it cannot be used with Karabiner-Elements. [kanata#1211](https://github.com/jtroo/kanata/issues/1211)
+
+The reason I decided to use kanata instead of Karabiner-Elements is that kanata has many features such as layers and macros that are difficult to implement in Karabiner-Elements.
+
+However, one thing I missed when switching from Karabiner-Elements to kanata was application-aware key mapping.
+kanata made it clear that application-aware layer switching should be done through an external tool, not within kanata. [kanata#770](https://github.com/jtroo/kanata/discussions/770)
+
+It seemed that many people had already developed tools for Linux and Windows,
+([Community projects related to kanata](https://github.com/jtroo/kanata#community-projects-related-to-kanata))
+but I couldn't find one for macOS. So I decided to create an application-aware kanata helper tool for macOS.
+
+Initially, I tried to switch layers, but realized that for simple configuration and to avoid tricky situations like switching apps during layer-toggle(layer-while-held),
+it was better to use virtual keys rather than layers. So I created a tool that allows application-aware key mappings based on virtual keys.
 
 ## Note
 
-- As explained in Background, this tool currently only support macOS
-- kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not run when the virtual key is pressed, so it will run on the next app change
+- This tool uses Apple's macOS Objective-C frameworks, so it only supports macOS
 - kanata allows [up to 767 virtual keys](https://jtroo.github.io/config.html#virtual-keys)
+
+### live reload
+
+kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not run when the virtual key is pressed, so it will run on the next time all virtual keys are released (when switched to an app not included in `-b`)
+
+```
+...
+18:06:24.3392 [INFO] Requested live reload of file: /Users/sunb/dev/dotfiles/kanata/kanata.kbd
+// Live reload triggered but not executed because the virtual key is pressed
+18:06:25.1873 [INFO] tcp server fake-key action: org.mozilla.firefox,Release
+18:06:25.1875 [INFO] tcp server fake-key action: com.apple.Safari,Press
+// Frontmost app switched Firefox to Safari but live reload still not executed because both app included in bundle ids
+18:06:28.0506 [INFO] tcp server fake-key action: com.apple.Safari,Release
+18:06:28.0525 [INFO] process unmapped keys: true
+// Frontmost app switched to Finder and live reload executed
+...
+```
 
 ## Credit
 
