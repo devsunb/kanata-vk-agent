@@ -6,11 +6,7 @@ use objc2_app_kit::{
     NSWorkspaceDidActivateApplicationNotification,
 };
 use objc2_foundation::{NSNotification, NSString};
-use std::{
-    ptr::NonNull,
-    sync::mpsc::{Receiver, Sender},
-    thread,
-};
+use std::{ptr::NonNull, sync::mpsc::Sender};
 
 trait Notification {
     fn bundle_id(&self) -> Option<Retained<NSString>>;
@@ -27,20 +23,18 @@ impl Notification for NSNotification {
     }
 }
 
-pub fn frontmost_app_bundle_id() -> Option<Retained<NSString>> {
+pub fn frontmost_app_bundle_id() -> Option<String> {
     unsafe {
-        NSWorkspace::sharedWorkspace()
-            .frontmostApplication()?
-            .bundleIdentifier()
+        Some(
+            NSWorkspace::sharedWorkspace()
+                .frontmostApplication()?
+                .bundleIdentifier()?
+                .to_string(),
+        )
     }
 }
 
-pub fn run<F, T>(tx: Sender<Retained<NSString>>, f: F)
-where
-    F: FnOnce() -> T,
-    F: Send + 'static,
-    T: Send + 'static,
-{
+pub fn watch(tx: Sender<String>) {
     let center = unsafe { NSWorkspace::sharedWorkspace().notificationCenter() };
     let observer = unsafe {
         center.addObserverForName_object_queue_usingBlock(
@@ -51,28 +45,11 @@ where
                 let Some(bundle_id) = notif.as_ref().bundle_id() else {
                     return;
                 };
-                tx.send(bundle_id).unwrap();
+                tx.send(bundle_id.to_string()).unwrap();
             }),
         )
     };
-    let handle = thread::spawn(f);
     // CFRunLoopRun runs indefinitely
     unsafe { CFRunLoopRun() };
-    handle.join().unwrap();
     unsafe { center.removeObserver(&observer) };
-}
-
-pub fn id_mode(tx: Sender<Retained<NSString>>, rx: Receiver<Retained<NSString>>) {
-    run(tx, move || {
-        let mut current = frontmost_app_bundle_id().unwrap().to_string();
-        println!("{current}");
-        for new in rx {
-            let new = new.to_string();
-            if current == new {
-                continue;
-            }
-            println!("{new}");
-            current = new;
-        }
-    });
 }

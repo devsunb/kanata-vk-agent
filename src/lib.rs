@@ -1,4 +1,4 @@
 pub mod cmd;
 pub mod kanata;
 pub mod log;
-pub mod run;
+pub mod watch;

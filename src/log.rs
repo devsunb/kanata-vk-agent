@@ -4,7 +4,7 @@ use simplelog::{ColorChoice, CombinedLogger, ConfigBuilder, TermLogger, Terminal
 pub fn init_logger(args: &Args) {
     let mut config = ConfigBuilder::new();
     if let Err(e) = config.set_time_offset_to_local() {
-        eprintln!("WARNING: could not set log TZ to local: {:?}", e);
+        eprintln!("WARNING: failed to set logger timezone to local: {e:?}");
     };
     CombinedLogger::init(vec![TermLogger::new(
         match args.log_level {
