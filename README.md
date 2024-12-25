@@ -25,6 +25,7 @@ cp target/release/kanata-appvk "$HOME/.local/bin/kanata-appvk"
 If you're interested in using launchd to automatically run in the background, see the following script.
 
 ```sh
+LAUNCH_AGENTS_PATH="$HOME/Library/LaunchAgents"
 KANATA_APPVK_ID="local.kanata-appvk"
 KANATA_APPVK="$HOME/.local/bin/kanata-appvk"
 KANATA_APPVK_PLIST="$LAUNCH_AGENTS_PATH/$KANATA_APPVK_ID.plist"
@@ -152,7 +153,7 @@ kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox,com.github.wez.wezt
 Unless the current frontmost app is one of the apps passed with the `-b` option, all bundle identifier virtual keys will be in the released state.
 
 This means that in the above configuration, if you switch apps in the order Safari - Finder - Firefox,
-the virtual keys that are activated are `com.apple.Safari` - (all released) - `org.mozilla.firefox`, respectively.
+the activated virtual key will be `com.apple.Safari` - (all released) - `org.mozilla.firefox`, respectively.
 
 If you're curious about what your app's bundle identifier is, use the `-f` option.
 
