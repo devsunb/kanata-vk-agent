@@ -35,9 +35,9 @@ pub fn frontmost_app_bundle_id() -> Option<String> {
 }
 
 pub fn watch(tx: Sender<String>) {
-    let center = unsafe { NSWorkspace::sharedWorkspace().notificationCenter() };
-    let observer = unsafe {
-        center.addObserverForName_object_queue_usingBlock(
+    unsafe {
+        let center = NSWorkspace::sharedWorkspace().notificationCenter();
+        let observer = center.addObserverForName_object_queue_usingBlock(
             Some(NSWorkspaceDidActivateApplicationNotification),
             None,
             None,
@@ -47,9 +47,9 @@ pub fn watch(tx: Sender<String>) {
                 };
                 tx.send(bundle_id.to_string()).unwrap();
             }),
-        )
-    };
-    // CFRunLoopRun runs indefinitely
-    unsafe { CFRunLoopRun() };
-    unsafe { center.removeObserver(&observer) };
+        );
+        // CFRunLoopRun runs indefinitely
+        CFRunLoopRun();
+        center.removeObserver(&observer);
+    }
 }

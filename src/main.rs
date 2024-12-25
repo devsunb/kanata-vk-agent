@@ -3,8 +3,12 @@ use kanata_appvk::{
     kanata::Kanata,
     watch::{frontmost_app_bundle_id, watch},
 };
+use log::{debug, LevelFilter};
 use simplelog::{ColorChoice, CombinedLogger, ConfigBuilder, TermLogger, TerminalMode};
-use std::{sync::mpsc, thread};
+use std::{
+    sync::mpsc::{channel, Receiver},
+    thread,
+};
 
 /// Watch macOS frontmost app and press/release kanata virtual keys
 ///
@@ -47,12 +51,12 @@ pub fn init_logger(args: &Args) {
     };
     CombinedLogger::init(vec![TermLogger::new(
         match args.log_level {
-            LogLevel::Off => log::LevelFilter::Off,
-            LogLevel::Error => log::LevelFilter::Error,
-            LogLevel::Warn => log::LevelFilter::Warn,
-            LogLevel::Info => log::LevelFilter::Info,
-            LogLevel::Debug => log::LevelFilter::Debug,
-            LogLevel::Trace => log::LevelFilter::Trace,
+            LogLevel::Off => LevelFilter::Off,
+            LogLevel::Error => LevelFilter::Error,
+            LogLevel::Warn => LevelFilter::Warn,
+            LogLevel::Info => LevelFilter::Info,
+            LogLevel::Debug => LevelFilter::Debug,
+            LogLevel::Trace => LevelFilter::Trace,
         },
         config.build(),
         TerminalMode::Mixed,
@@ -64,7 +68,7 @@ pub fn init_logger(args: &Args) {
 fn main() {
     let args = Args::parse();
     init_logger(&args);
-    log::debug!("args: {:?}", args);
+    debug!("args: {:?}", args);
     Appvk::new(args).run();
 }
 
@@ -92,7 +96,7 @@ impl Appvk {
     }
 
     pub fn run(self) {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = channel();
 
         let handle = if self.find_id_mode {
             thread::spawn(move || Appvk::run_find_id_mode(rx))
@@ -105,7 +109,7 @@ impl Appvk {
         handle.join().unwrap();
     }
 
-    fn run_find_id_mode(rx: mpsc::Receiver<String>) {
+    fn run_find_id_mode(rx: Receiver<String>) {
         let mut current = frontmost_app_bundle_id().unwrap();
         println!("{current}");
         for new in rx {
@@ -118,9 +122,9 @@ impl Appvk {
         }
     }
 
-    fn run_appvk(&self, mut kanata: Kanata, rx: mpsc::Receiver<String>) {
+    fn run_appvk(&self, mut kanata: Kanata, rx: Receiver<String>) {
         let mut current_vk = self.to_vk(frontmost_app_bundle_id().unwrap());
-        log::debug!("initial vk: {current_vk:?}");
+        debug!("initial vk: {current_vk:?}");
 
         for vk in &self.bundle_ids {
             kanata.release_vk(vk)
@@ -137,7 +141,7 @@ impl Appvk {
                 continue;
             }
 
-            log::debug!("{current_vk:?} -> {new_vk:?}");
+            debug!("{current_vk:?} -> {new_vk:?}");
             if let Some(vk) = &current_vk {
                 kanata.release_vk(vk)
             }

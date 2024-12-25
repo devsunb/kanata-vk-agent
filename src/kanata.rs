@@ -1,3 +1,4 @@
+use log::{error, info, trace};
 use serde::{Deserialize, Serialize};
 use std::{
     io::Write,
@@ -25,10 +26,10 @@ impl Kanata {
         let ip = [127, 0, 0, 1];
         let timeout = Duration::from_secs(2);
 
-        log::info!("connecting to kanata: 127.0.0.1:{port}");
+        info!("connecting to kanata: 127.0.0.1:{port}");
         let stream = TcpStream::connect_timeout(&SocketAddr::from((ip, port)), timeout)
             .expect("connect to kanata");
-        log::info!("connected to kanata");
+        info!("connected to kanata");
         Kanata { stream }
     }
 
@@ -38,7 +39,7 @@ impl Kanata {
             action,
         })
         .expect("serialize json");
-        log::trace!("serialized json: {msg}");
+        trace!("serialized json: {msg}");
 
         let expected_wsz = msg.len();
         let wsz = self
@@ -46,7 +47,7 @@ impl Kanata {
             .write(msg.as_bytes())
             .expect("write message to kanata");
         if wsz != expected_wsz {
-            log::error!("failed to write entire message: {wsz}/{expected_wsz}")
+            error!("failed to write entire message: {wsz}/{expected_wsz}")
         }
     }
 
