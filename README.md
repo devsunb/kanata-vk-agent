@@ -13,9 +13,12 @@ The reason I decided to use kanata instead of Karabiner-Elements is that kanata 
 However, one thing I missed when switching from Karabiner-Elements to kanata was application-aware key mapping.
 kanata made it clear that application-aware layer switching should be done through an external tool, not within kanata. [kanata#770](https://github.com/jtroo/kanata/discussions/770)
 
-It seemed that many people had already developed tools for Linux and Windows, but I couldn't find one for macOS. So I decided to create an application-aware kanata helper tool for macOS.
+It seemed that many people had already developed tools for Linux and Windows,
+([Community projects related to kanata](https://github.com/jtroo/kanata#community-projects-related-to-kanata))
+but I couldn't find one for macOS. So I decided to create an application-aware kanata helper tool for macOS.
 
-Initially, I tried to switch layers, but realized that for simple configuration and to avoid tricky situations like switching apps during layer-toggle(layer-while-held), it was better to use virtual keys rather than layers. So I created a tool that allows application-aware key mappings based on virtual keys.
+Initially, I tried to switch layers, but realized that for simple configuration and to avoid tricky situations like switching apps during layer-toggle(layer-while-held),
+it was better to use virtual keys rather than layers. So I created a tool that allows application-aware key mappings based on virtual keys.
 
 ## Install
 
