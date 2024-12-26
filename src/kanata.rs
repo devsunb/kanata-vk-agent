@@ -19,26 +19,32 @@ enum Action {
 }
 
 pub struct Kanata {
+    addr: SocketAddr,
     stream: TcpStream,
 }
 
 impl Kanata {
-    pub fn connect(port: u16) -> Self {
-        let ip = [127, 0, 0, 1];
+    pub fn new(port: u16) -> Self {
+        let addr = SocketAddr::from(([127, 0, 0, 1], port));
+        let stream = Self::connect(&addr);
+        Kanata { addr, stream }
+    }
+
+    pub fn connect(addr: &SocketAddr) -> TcpStream {
         let timeout = Duration::from_millis(200);
         let retry_interval = Duration::from_millis(200);
         let retry_timeout = Duration::from_secs(2);
 
-        info!("connecting to kanata: 127.0.0.1:{port}");
+        info!("connecting to kanata: {addr}");
         let start_time = Instant::now();
         loop {
             if start_time.elapsed() >= retry_timeout {
                 panic!("failed to connect to kanata within 2 seconds");
             }
-            match TcpStream::connect_timeout(&SocketAddr::from((ip, port)), timeout) {
+            match TcpStream::connect_timeout(addr, timeout) {
                 Ok(stream) => {
                     info!("connected to kanata");
-                    return Kanata { stream };
+                    return stream;
                 }
                 Err(e) => {
                     debug!("failed to connect to kanata: {e}");
@@ -46,6 +52,10 @@ impl Kanata {
                 }
             }
         }
+    }
+
+    fn reconnect(&mut self) {
+        self.stream = Self::connect(&self.addr);
     }
 
     fn act_on_fake_key(&mut self, name: &str, action: Action) {
@@ -57,12 +67,17 @@ impl Kanata {
         trace!("serialized json: {msg}");
 
         let expected_wsz = msg.len();
-        let wsz = self
-            .stream
-            .write(msg.as_bytes())
-            .expect("write message to kanata");
-        if wsz != expected_wsz {
-            error!("failed to write entire message: {wsz}/{expected_wsz}")
+        match self.stream.write(msg.as_bytes()) {
+            Ok(wsz) => {
+                trace!("wrote message: {wsz}");
+                if wsz != expected_wsz {
+                    error!("failed to write entire message: {wsz}/{expected_wsz}");
+                }
+            }
+            Err(e) => {
+                error!("failed to write message to kanata: {e}");
+                self.reconnect();
+            }
         }
     }
 

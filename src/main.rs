@@ -101,7 +101,7 @@ impl Appvk {
         let handle = if self.find_id_mode {
             thread::spawn(move || Appvk::run_find_id_mode(rx))
         } else {
-            let kanata = Kanata::connect(self.port);
+            let kanata = Kanata::new(self.port);
             thread::spawn(move || self.run_appvk(kanata, rx))
         };
 
