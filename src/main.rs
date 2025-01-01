@@ -1,5 +1,5 @@
 use clap::Parser;
-use kanata_appvk::{
+use kanata_vk_agent::{
     kanata::Kanata,
     util::vk,
     watch::{frontmost_app_bundle_id, input_source, watch},
@@ -10,7 +10,7 @@ use tokio::sync::watch::{channel, Receiver};
 
 /// Control kanata virtual keys while observing frontmost app and input source on macOS
 ///
-/// Example: kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox -i com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean
+/// Example: kanata-vk-agent -p 5829 -b com.apple.Safari,org.mozilla.firefox -i com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean
 #[derive(Parser, Debug)]
 #[command(version, about)]
 pub struct Args {
@@ -72,17 +72,16 @@ async fn main() {
     let args = Args::parse();
     init_logger(&args);
     debug!("args: {:?}", args);
-    // Appvk::new(args).run().await;
 
     let (app_tx, app_rx) = channel(frontmost_app_bundle_id().unwrap());
     let (input_source_tx, input_source_rx) = channel(input_source());
 
     let handle = if args.find_id_mode {
-        tokio::spawn(async move { run_find_id_mode(app_rx, input_source_rx).await })
+        tokio::spawn(async move { find_id(app_rx, input_source_rx).await })
     } else {
         let mut kanata = Kanata::new(args.port);
         tokio::spawn(async move {
-            run_appvk(
+            vk_agent(
                 args.bundle_ids,
                 args.input_source_ids,
                 &mut kanata,
@@ -104,7 +103,7 @@ async fn main() {
     handle.await.unwrap();
 }
 
-async fn run_find_id_mode(mut app_rx: Receiver<String>, mut input_source_rx: Receiver<String>) {
+async fn find_id(mut app_rx: Receiver<String>, mut input_source_rx: Receiver<String>) {
     let mut current_app = frontmost_app_bundle_id().unwrap();
     println!("Frontmost App Bundle ID: {current_app}");
 
@@ -133,7 +132,7 @@ async fn run_find_id_mode(mut app_rx: Receiver<String>, mut input_source_rx: Rec
     }
 }
 
-async fn run_appvk(
+async fn vk_agent(
     bundle_ids: Vec<String>,
     input_source_ids: Vec<String>,
     kanata: &mut Kanata,

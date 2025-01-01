@@ -1,4 +1,4 @@
-# kanata-appvk
+# kanata-vk-agent
 
 Control kanata virtual keys while observing frontmost app and input source on macOS to enable application and input source aware key mapping
 
@@ -16,31 +16,31 @@ Control kanata virtual keys while observing frontmost app and input source on ma
 Building from source is the only currently available installation method.
 
 ```sh
-git clone https://github.com/devsunb/kanata-appvk.git
-cd kanata-appvk
+git clone https://github.com/devsunb/kanata-vk-agent.git
+cd kanata-vk-agent
 cargo build --release
-cp target/release/kanata-appvk "$HOME/.local/bin/kanata-appvk"
+cp target/release/kanata-vk-agent "$HOME/.local/bin/kanata-vk-agent"
 ```
 
 If you're interested in using launchd to automatically run in the background, see the following script.
 
 ```sh
 LAUNCH_AGENTS_PATH="$HOME/Library/LaunchAgents"
-KANATA_APPVK_ID="local.kanata-appvk"
-KANATA_APPVK="$HOME/.local/bin/kanata-appvk"
-KANATA_APPVK_PLIST="$LAUNCH_AGENTS_PATH/$KANATA_APPVK_ID.plist"
+KANATA_VK_AGENT_ID="local.kanata-vk-agent"
+KANATA_VK_AGENT="$HOME/.local/bin/kanata-vk-agent"
+KANATA_VK_AGENT_PLIST="$LAUNCH_AGENTS_PATH/$KANATA_VK_AGENT_ID.plist"
 
-cat <<EOF | tee "$KANATA_APPVK_PLIST" >/dev/null
+cat <<EOF | tee "$KANATA_VK_AGENT_PLIST" >/dev/null
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>$KANATA_APPVK_ID</string>
+    <string>$KANATA_VK_AGENT_ID</string>
 
     <key>ProgramArguments</key>
     <array>
-      <string>$KANATA_APPVK</string>
+      <string>$KANATA_VK_AGENT</string>
       <string>-p</string>
       <string>5829</string>
       <string>-b</string>
@@ -61,16 +61,16 @@ cat <<EOF | tee "$KANATA_APPVK_PLIST" >/dev/null
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/tmp/kanata_appvk_stdout.log</string>
+    <string>/tmp/kanata_vk_agent_stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/kanata_appvk_stderr.log</string>
+    <string>/tmp/kanata_vk_agent_stderr.log</string>
   </dict>
 </plist>
 EOF
 
-launchctl bootout gui/501 "$KANATA_APPVK_PLIST" 2>/dev/null || true
-launchctl bootstrap gui/501 "$KANATA_APPVK_PLIST"
-launchctl enable "gui/501/$KANATA_APPVK_ID"
+launchctl bootout gui/501 "$KANATA_VK_AGENT_PLIST" 2>/dev/null || true
+launchctl bootstrap gui/501 "$KANATA_VK_AGENT_PLIST"
+launchctl enable "gui/501/$KANATA_VK_AGENT_ID"
 ```
 
 You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), port(`5829`), bundle ids(`com.apple.Safari,org.mozilla.firefox`), input source ids(`com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean`), etc. to suit your system.
@@ -78,13 +78,13 @@ You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path
 ## Usage
 
 ```sh
-$ kanata-appvk --help
+$ kanata-vk-agent --help
 
 Control kanata virtual keys while observing frontmost app and input source on macOS
 
-Example: kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox -i com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean
+Example: kanata-vk-agent -p 5829 -b com.apple.Safari,org.mozilla.firefox -i com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean
 
-Usage: kanata-appvk [OPTIONS]
+Usage: kanata-vk-agent [OPTIONS]
 
 Options:
   -l, --log-level <LOG_LEVEL>
@@ -149,10 +149,10 @@ Options:
 
 The above kanata configuration would make the key `1` act as `1` in Safari, `2` in Firefox, and `3` in other apps.
 
-kanata-appvk should be running with a command like:
+kanata-vk-agent should be running with a command like:
 
 ```sh
-kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox,com.github.wez.wezterm
+kanata-vk-agent -p 5829 -b com.apple.Safari,org.mozilla.firefox,com.github.wez.wezterm
 ```
 
 Unless the current frontmost app is one of the apps passed with the `-b` option, all bundle identifier virtual keys will be in the released state.
@@ -162,10 +162,10 @@ the activated virtual key will be `com.apple.Safari` - (all released) - `org.moz
 
 If you're curious about what your app's bundle identifier is, use the `-f` option.
 
-kanata-appvk will not connect to kanata, and will just print the bundle identifier of the frontmost app when the frontmost app changes.
+kanata-vk-agent will not connect to kanata, and will just print the bundle identifier of the frontmost app when the frontmost app changes.
 
 ```sh
-kanata-appvk -f
+kanata-vk-agent -f
 ```
 
 ## Background
