@@ -88,4 +88,16 @@ impl Kanata {
     pub fn press_vk(&mut self, name: &str) {
         self.act_on_fake_key(name, Action::Press)
     }
+
+    pub fn init_vks(&mut self, vks: &Vec<String>, current_vk: &Option<String>) {
+        if let Some(current_vk) = current_vk {
+            for vk in vks {
+                if vk == current_vk {
+                    self.press_vk(vk)
+                } else {
+                    self.release_vk(vk)
+                }
+            }
+        }
+    }
 }

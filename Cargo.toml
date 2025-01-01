@@ -5,13 +5,14 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
+block2 = "0.5"
 clap = { version = "4", features = ["derive"] }
+core-foundation = "0.10"
+log = "0.4"
+objc2 = "0.5"
+objc2-app-kit = { version = "0.2", features = ["NSRunningApplication", "NSWorkspace", "NSTextInputContext"] }
+objc2-foundation = { version = "0.2", features = ["NSOperation", "NSString", "block2", "NSDistributedNotificationCenter"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-log = "0.4"
 simplelog = "0.12"
-block2 = "0.5"
-core-foundation = "0.10"
-objc2 = "0.5"
-objc2-app-kit = { version = "0.2", features = ["NSRunningApplication", "NSWorkspace"] }
-objc2-foundation = { version = "0.2", features = ["NSOperation", "NSString", "block2"] }
+tokio = { version = "1", features = ["full"] }

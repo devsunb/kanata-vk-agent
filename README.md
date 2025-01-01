@@ -1,19 +1,19 @@
 # kanata-appvk
 
-Watch macOS frontmost app and press/release kanata virtual keys to enable application-aware key mappings
+Control kanata virtual keys while observing frontmost app and input source on macOS to enable application and input source aware key mapping
 
 ## What does this do?
 
 - on start
-  - release all bundle id virtual keys
-  - press the virtual key named with the frontmost app's bundle id (if it is included in the `-b` option)
-- when the frontmost app changes (and that app's bundle id is included in the `-b` option)
-  - release the pressed bundle id virtual key (if exists)
-  - press the new frontmost app's bundle id virtual key
+  - release all virtual keys passed as options
+  - press the virtual key named with the id of the frontmost app or current input source
+- when the frontmost app and input source changes
+  - release the pressed virtual key
+  - press the virtual key named with the id of the new frontmost app or input source
 
 ## Install
 
-For now, you can clone this repository, build it yourself, copy it to your PATH, and run it.
+Building from source is the only currently available installation method.
 
 ```sh
 git clone https://github.com/devsunb/kanata-appvk.git
@@ -45,6 +45,8 @@ cat <<EOF | tee "$KANATA_APPVK_PLIST" >/dev/null
       <string>5829</string>
       <string>-b</string>
       <string>com.apple.Safari,org.mozilla.firefox</string>
+      <string>-i</string>
+      <string>com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -71,16 +73,16 @@ launchctl bootstrap gui/501 "$KANATA_APPVK_PLIST"
 launchctl enable "gui/501/$KANATA_APPVK_ID"
 ```
 
-You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), port(`5829`), bundle identifiers(`com.apple.Safari,org.mozilla.firefox`), etc. to suit your system.
+You may need to modify the executable(`$HOME/.local/bin/`) and log(`/tmp/`) path, uid(`501`), port(`5829`), bundle ids(`com.apple.Safari,org.mozilla.firefox`), input source ids(`com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean`), etc. to suit your system.
 
 ## Usage
 
 ```sh
 $ kanata-appvk --help
 
-Watch macOS frontmost app and press/release kanata virtual keys
+Control kanata virtual keys while observing frontmost app and input source on macOS
 
-Example: kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox
+Example: kanata-appvk -p 5829 -b com.apple.Safari,org.mozilla.firefox -i com.apple.keylayout.ABC,com.apple.inputmethod.Korean.2SetKorean
 
 Usage: kanata-appvk [OPTIONS]
 
@@ -99,8 +101,11 @@ Options:
   -b, --bundle-ids <BUNDLE_IDS>
           Bundle Identifiers, each of which is the name of a virtual key
 
+  -i, --input-source-ids <INPUT_SOURCE_IDS>
+          Input Source Identifiers, each of which is the name of a virtual key
+
   -f, --find-id-mode
-          Just print frontmost app's Bundle Identifier when it changes without connecting to kanata
+          Just print the app's bundle id or input source id when the frontmost app and input source change. In this mode, it will not connect to kanata
 
   -h, --help
           Print help (see a summary with '-h')
@@ -116,7 +121,7 @@ Options:
   - The action for each virtual key can be any value (when in doubt, use nop0)
   - Use [switch and input syntax](https://jtroo.github.io/config.html#switch) for application-aware key behavior
 
-### kanata configuration example
+## kanata configuration example
 
 ```kbd
 (defsrc
@@ -188,7 +193,8 @@ it was better to use virtual keys rather than layers. So I created a tool that a
 
 ### live reload
 
-kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not run when the virtual key is pressed, so it will run on the next time all virtual keys are released (when switched to an app not included in `-b`)
+kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not run when the virtual key is pressed,
+so it will run on the next time all virtual keys are released.
 
 ```
 ...
@@ -203,8 +209,12 @@ kanata [live reload](https://jtroo.github.io/config.html#live-reload) does not r
 ...
 ```
 
+If you pass all the input sources you're using as input-source-ids,
+you might never get to a state where all virtual keys are released,
+in which case live reload is not available at this time.
+
 ## Credit
 
 - [appwatcher](https://github.com/meschbach/appwatcher): Example of using cgo to execute go code when macOS frontmost app changes
-- [clavy](https://github.com/rami3l/clavy): I had never used rust before, so I was going to make it in go, but then I saw that this repository uses objc2 libraries and channel, so I rebuilt it in rust.
+- [clavy](https://github.com/rami3l/clavy): I had never used rust before, so I tried to build it in go, but then I saw that this repository uses objc2 libraries, so I was able to rebuild it in rust.
 - [qanata](https://github.com/veyxov/qanata): Referenced how to communicate over a TCP connection with kanata in rust.
