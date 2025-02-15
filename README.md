@@ -13,7 +13,14 @@ Control kanata virtual keys while observing frontmost app and input source on ma
 
 ## Install
 
-Building from source is the only currently available installation method.
+### Homebrew
+
+```sh
+brew tap devsunb/tap
+brew install kanata-vk-agent
+```
+
+### Build from source
 
 ```sh
 git clone https://github.com/devsunb/kanata-vk-agent.git
@@ -21,6 +28,8 @@ cd kanata-vk-agent
 cargo build --release
 cp target/release/kanata-vk-agent "$HOME/.local/bin/kanata-vk-agent"
 ```
+
+## Running via launchd
 
 If you're interested in using launchd to automatically run in the background, see the following script.
 
